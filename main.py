@@ -8,12 +8,15 @@
 #Find number of occurrences of each word in the document
 
 from __future__ import division
+from math import log
 import sys
 
-words = [{'word':'',
-           'frequency': 0}
-            ]
-count = {'word': 0}
+words = []
+
+count = {'word': 0} # number of times 'word' appears accross whole set
+
+doctermcount = {'word': 0} # number of documents containing the word
+
 
 stopwords = ['\n', 'and','to', 'because',
              'so', 'the', 'a', 'when', 
@@ -133,14 +136,16 @@ stopwords = ['\n', 'and','to', 'because',
 "your",
 ]
 
+
 # Append stop words from argv
 try:
-    stopwords.extend(sys.argv[1].split(','))    
+    stopwords.extend(sys.argv[2].split(','))    
 except IndexError:
     pass
 
-def processline(line):
-    for word in line.split(' '):
+def wordcountDoc(doc):
+    print "wordcountdoc"
+    for word in doc.split(' '):
         if word.lower() in stopwords or not word.isalnum():
             continue
         if word not in words:
@@ -170,9 +175,57 @@ def normalizeTermFrequence():
         termFrequency = calculateTermFrequency(word)
         count[word] = termFrequency
 
-with open('text.txt') as fp:
-    for line in iter(fp.readline, ''):
-        processline(line)
+def getInverseDocumentFrequency(term):
+    '''Returns measure of how much information the word provides
+       that is, whether the term is common or rare across all documents in the
+       set.
+
+       Obtained by dividing the total number of documents by the number of
+       documents containing the term, and then taking the logarithm of that
+       quotient
+    '''
+    quotient = numDocuments // 1 + numDocsContainingTerm(term) # double "/" is (floored) quotient of x and y
+    return log(quotient)
+
+
+def calctfidf():
+    for word in words:
+        termFrequency = calculateTermFrequency(word)
+        inverseDocFrequency = getInverseDocumentFrequency(word)
+        tfidf = termFrequency * inverseDocFrequency
+        #update words in count dict with tfidf value
+        count[word] = tfidf
+
+def numDocsContainingTerm(term):
+    try:
+        return doctermcount[term]
+    except KeyError:
+        return 0
+
+def calcnumDocsContainingTerm(doc):
+    for word in words:
+        if word not in doctermcount:
+            doctermcount[word] = 0
+        if word in doc:
+            doctermcount[word] += 1
+
+# Get filename(s) from argv
+try:
+    filenames = sys.argv[1].split(',')
+except IndexError:
+    filenames = ['text.txt']
+
+numDocuments = len(filenames)
+docChanged = True
+for filename in filenames:
+    with open(filename) as fp:
+        doc = fp.read()
+        wordcountDoc(doc)
+        calcnumDocsContainingTerm(doc)
+
+normalizeTermFrequence()
+
+calctfidf()
 
 def compare(a,b):
     if a > b:
@@ -180,16 +233,14 @@ def compare(a,b):
     else:
         return -1
 
-mostUsed = mostusedword()
-print "Most used word is: " + mostUsed + '.'
-normalizeTermFrequence()
 words = count.keys()
 topWords = sorted(words, cmp=compare, key=count.__getitem__)
 topWords.reverse()
+
 print "This website is mostly about:"
 print topWords[0]
 print topWords[1]
 print topWords[2]
 print "####### Rest of the words #######"
-print "Ordered by most used to least:"
-print topWords[3:-1]
+print "Mostly this document set is about:"
+print topWords[0:20]
