@@ -5,7 +5,13 @@
 
 # Term frequency is: TFij = Fij/max k Fkj
 
-#Find number of occurrences of each word in the document
+# Term frequency with inverse document frequency is:
+# TFij X IDFi  or:
+# The term frequency X Inverse of the frequecy of a given term accross all 
+# documents.
+
+# @see https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+# @see Mining of Massive Datasets - Jure Leskovec, Anand Rajaraman, Jeff Ullman
 
 from __future__ import division
 from math import log
